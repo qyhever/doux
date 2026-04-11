@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
 type Props = {
   onRetry: () => void;
@@ -9,7 +8,13 @@ type Props = {
 export default function ErrorPlaceholder({ onRetry }: Props) {
   return (
     <View style={styles.container}>
-      <Ionicons name="alert-circle-outline" size={64} color="#fff" />
+      {/* Placeholder image representing a broken video */}
+      <View style={styles.imagePlaceholder}>
+        <View style={styles.playIconOuter}>
+          <View style={styles.playIconInner} />
+        </View>
+        <View style={styles.brokenLine} />
+      </View>
       <Text style={styles.message}>视频加载失败</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
         <Text style={styles.retryText}>重试</Text>
@@ -25,6 +30,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 80,
+    backgroundColor: '#222',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playIconOuter: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#666',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playIconInner: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftWidth: 14,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#666',
+    marginLeft: 3,
+  },
+  brokenLine: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: '#333',
   },
   message: {
     color: '#fff',

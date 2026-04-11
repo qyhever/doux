@@ -14,7 +14,6 @@ type Props = {
 export default function VideoPlayer({ uri, isActive, onError, onLoad }: Props) {
   const [isBuffering, setIsBuffering] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
 
   const player = useVideoPlayer({ uri }, (p) => {
     p.loop = true;
@@ -53,7 +52,6 @@ export default function VideoPlayer({ uri, isActive, onError, onLoad }: Props) {
   const handleRetry = useCallback(() => {
     setHasError(false);
     setIsBuffering(true);
-    setRetryKey((k) => k + 1);
     player.replace({ uri });
     if (isActive) player.play();
   }, [player, uri, isActive]);

@@ -5,7 +5,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import VideoPlayer from './VideoPlayer';
@@ -45,11 +44,11 @@ export default function VideoFeed() {
             Math.abs(e.velocityY) > VELOCITY_THRESHOLD;
 
           if (shouldSwitch && e.translationY < 0) {
-            translateY.value = withTiming(-SCREEN_HEIGHT, { duration: 300 }, () => {
+            translateY.value = withSpring(-SCREEN_HEIGHT, { damping: 20, stiffness: 200 }, () => {
               runOnJS(goNext)();
             });
           } else if (shouldSwitch && e.translationY > 0) {
-            translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 }, () => {
+            translateY.value = withSpring(SCREEN_HEIGHT, { damping: 20, stiffness: 200 }, () => {
               runOnJS(goPrev)();
             });
           } else {
