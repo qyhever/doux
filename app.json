@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "doux",
+    "slug": "doux",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "doux",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.doux.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.doux.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-video",
+      "react-native-reanimated"
+    ]
+  }
+}
