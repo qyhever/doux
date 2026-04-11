@@ -48,7 +48,7 @@ export default function VideoPlayer({ uri, isActive, onError, onLoad }: Props) {
     return () => {
       statusSub.remove();
     };
-  }, [player, onError, onLoad, retryKey]);
+  }, [player]); // Only re-subscribe when player instance changes
 
   const handleRetry = useCallback(() => {
     setHasError(false);
