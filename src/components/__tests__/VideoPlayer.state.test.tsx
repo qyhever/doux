@@ -1,4 +1,4 @@
-import { createRetryGuard, getDisplayState } from '../VideoPlayer';
+import { createRetryGuard, getDisplayState } from '../videoPlayer.logic';
 
 describe('VideoPlayer display state', () => {
   it('prefers error state over buffering state', () => {

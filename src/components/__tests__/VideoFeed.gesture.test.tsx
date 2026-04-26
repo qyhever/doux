@@ -1,4 +1,4 @@
-import { performTransition } from '../VideoFeed';
+import { performTransition } from '../videoFeed.logic';
 
 describe('VideoFeed transition order', () => {
   it('commits index only after animation completes', async () => {
