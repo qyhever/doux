@@ -1,5 +1,5 @@
 import { VideoPlayerStatus } from 'expo-video';
-import { ViewProps } from 'react-native';
+import { AppStateStatus, ViewProps } from 'react-native';
 
 export type DisplayState = 'error' | 'buffering' | 'playing';
 
@@ -47,4 +47,12 @@ export const createRetryGuard = () => {
       pending = false;
     }
   };
+};
+
+export const shouldPauseOnAppForeground = (
+  previousState: AppStateStatus,
+  nextState: AppStateStatus,
+): boolean => {
+  const wasInBackground = previousState === 'background' || previousState === 'inactive';
+  return wasInBackground && nextState === 'active';
 };

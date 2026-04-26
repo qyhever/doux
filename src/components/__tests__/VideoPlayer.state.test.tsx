@@ -4,6 +4,7 @@ import {
   getIsBufferingFromStatus,
   getVideoPointerEvents,
   resolveMuted,
+  shouldPauseOnAppForeground,
   togglePlayPause,
 } from '../videoPlayer.logic';
 
@@ -63,5 +64,14 @@ describe('VideoPlayer display state', () => {
     togglePlayPause(false, mockPlayer);
     expect(mockPlayer.play).toHaveBeenCalled();
     expect(mockPlayer.pause).not.toHaveBeenCalled();
+  });
+
+  it('pauses playback only when returning from background to foreground', () => {
+    expect(shouldPauseOnAppForeground('background', 'active')).toBe(true);
+    expect(shouldPauseOnAppForeground('inactive', 'active')).toBe(true);
+
+    expect(shouldPauseOnAppForeground('active', 'active')).toBe(false);
+    expect(shouldPauseOnAppForeground('active', 'inactive')).toBe(false);
+    expect(shouldPauseOnAppForeground('background', 'inactive')).toBe(false);
   });
 });

@@ -29,3 +29,13 @@ export const performTransition = async ({
   await animate();
   commit();
 };
+
+export const getCardPointerEvents = ({
+  currentIndex,
+  candidateIndex,
+}: {
+  currentIndex: number;
+  candidateIndex: number;
+}): 'auto' | 'none' => {
+  return candidateIndex === currentIndex ? 'auto' : 'none';
+};

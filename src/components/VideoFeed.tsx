@@ -1,13 +1,10 @@
 import React from 'react';
+import { Animated, Dimensions, SafeAreaView, StyleSheet, View } from 'react-native';
 import {
-  Animated,
-  Dimensions,
-  PanResponder,
-  PanResponderGestureState,
-  SafeAreaView,
-  StyleSheet,
-  View,
-} from 'react-native';
+  PanGestureHandler,
+  PanGestureHandlerStateChangeEvent,
+  State,
+} from 'react-native-gesture-handler';
 import { videos } from '../config/videos';
 import { createTransitionGate, decideSwitch, normalizeIndex } from '../hooks/useVideoFeed';
 import { planPreloadOps } from '../hooks/usePreloader';
@@ -15,10 +12,9 @@ import ActionButtons from './ActionButtons';
 import TabBar from './TabBar';
 import VideoInfo from './VideoInfo';
 import VideoPlayer from './VideoPlayer';
-import { getCardStepOffset, performTransition } from './videoFeed.logic';
+import { getCardPointerEvents, getCardStepOffset, performTransition } from './videoFeed.logic';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SECOND_NEXT_PRELOAD_DELAY_MS = 220;
 
 const VideoFeed = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
@@ -34,7 +30,6 @@ const VideoFeed = () => {
   const gateRef = React.useRef(createTransitionGate());
 
   React.useEffect(() => {
-    // Stage 1: prioritize the immediate next video.
     setRetained((previousRetained) => {
       const ops = planPreloadOps({
         current: currentIndex,
@@ -44,23 +39,6 @@ const VideoFeed = () => {
       });
       return ops.acquire;
     });
-
-    // Stage 2: expand to second-next after a short delay.
-    const timer = setTimeout(() => {
-      setRetained((previousRetained) => {
-        const ops = planPreloadOps({
-          current: currentIndex,
-          length: videos.length,
-          previousRetained,
-          includeSecondNext: true,
-        });
-        return ops.acquire;
-      });
-    }, SECOND_NEXT_PRELOAD_DELAY_MS);
-
-    return () => {
-      clearTimeout(timer);
-    };
   }, [currentIndex]);
 
   const commitByDecision = React.useCallback((decision: 'prev' | 'next' | 'stay') => {
@@ -82,10 +60,10 @@ const VideoFeed = () => {
   }, [translateY]);
 
   const handleRelease = React.useCallback(
-    async (_: unknown, gestureState: PanResponderGestureState) => {
+    async ({ dy, vy }: { dy: number; vy: number }) => {
       const decision = decideSwitch({
-        dy: gestureState.dy,
-        vy: gestureState.vy,
+        dy,
+        vy,
         height: SCREEN_HEIGHT,
       });
 
@@ -107,29 +85,43 @@ const VideoFeed = () => {
     [animateTo, commitByDecision, translateY],
   );
 
-  const panResponder = React.useMemo(
+  const handlePanGestureEvent = React.useMemo(
     () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_: unknown, gestureState: PanResponderGestureState) =>
-          Math.abs(gestureState.dy) > 6,
-        onPanResponderMove: (_: unknown, gestureState: PanResponderGestureState) => {
-          translateY.setValue(gestureState.dy);
-        },
-        onPanResponderRelease: handleRelease,
-        onPanResponderTerminate: () => {
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 120,
-            useNativeDriver: true,
-          }).start();
-        },
+      Animated.event([{ nativeEvent: { translationY: translateY } }], {
+        useNativeDriver: true,
       }),
+    [translateY],
+  );
+
+  const handlePanStateChange = React.useCallback(
+    async (event: PanGestureHandlerStateChangeEvent) => {
+      const { oldState, translationY, velocityY, state } = event.nativeEvent;
+
+      if (oldState === State.ACTIVE) {
+        await handleRelease({ dy: translationY, vy: velocityY });
+        return;
+      }
+
+      if (state === State.CANCELLED || state === State.FAILED) {
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
     [handleRelease, translateY],
   );
 
   return (
     <SafeAreaView style={styles.screen}>
-      <Animated.View style={[styles.feedCard, { transform: [{ translateY }] }]} {...panResponder.panHandlers}>
+      <PanGestureHandler
+        activeOffsetY={[-6, 6]}
+        failOffsetX={[-24, 24]}
+        onGestureEvent={handlePanGestureEvent}
+        onHandlerStateChange={handlePanStateChange}
+      >
+        <Animated.View style={[styles.feedCard, { transform: [{ translateY }] }]}>
         {retained.map((index) => {
           const stepOffset = getCardStepOffset({
             currentIndex,
@@ -145,7 +137,7 @@ const VideoFeed = () => {
             <View
               key={`${videos[index]}-${index}`}
               style={[styles.videoCard, { transform: [{ translateY: stepOffset * SCREEN_HEIGHT }] }]}
-              pointerEvents="none"
+              pointerEvents={getCardPointerEvents({ currentIndex, candidateIndex: index })}
             >
               <VideoPlayer uri={videos[index]} isActive={index === currentIndex} />
             </View>
@@ -159,7 +151,8 @@ const VideoFeed = () => {
           />
           <ActionButtons />
         </View>
-      </Animated.View>
+        </Animated.View>
+      </PanGestureHandler>
       <TabBar />
     </SafeAreaView>
   );

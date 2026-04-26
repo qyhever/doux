@@ -1,10 +1,7 @@
 export const videos = [
   'https://qyhever.com/videos/24u7qivyunz.mp4',
-  'https://qyhever.com/videos/IMG_5287.MOV',
   'https://qyhever.com/videos/2hzcohudabj.mp4',
-  'https://qyhever.com/videos/IMG_5288.MOV',
   'https://qyhever.com/videos/a9d922da.mp4',
-  'https://qyhever.com/videos/IMG_5316.MOV',
   'https://qyhever.com/videos/a9d922dc.mp4',
   'https://qyhever.com/videos/a9d922e1.mp4',
   'https://qyhever.com/videos/a9d92409.mp4',
@@ -12,11 +9,4 @@ export const videos = [
   'https://qyhever.com/videos/r5u00mc02j.mp4',
   'https://qyhever.com/videos/v28dddg7yvr.mp4',
   'https://qyhever.com/videos/vjsab8nx29p.mp4',
-  'https://qyhever.com/videos/IMG_5324.MOV',
-  'https://qyhever.com/videos/IMG_5343.MOV',
-  'https://qyhever.com/videos/IMG_5347.MOV',
-  'https://qyhever.com/videos/IMG_5349.MOV',
-  'https://qyhever.com/videos/IMG_5354.MOV',
-  'https://qyhever.com/videos/IMG_5355.MOV',
-  'https://qyhever.com/videos/IMG_5359.MOV',
 ];

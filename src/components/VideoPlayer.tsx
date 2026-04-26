@@ -1,7 +1,8 @@
 import React from 'react';
 import { useEvent } from 'expo';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, StyleSheet, Text, View } from 'react-native';
 import { VideoSource, VideoView, useVideoPlayer } from 'expo-video';
+import { TapGestureHandler } from 'react-native-gesture-handler';
 import ErrorPlaceholder from './ErrorPlaceholder';
 import LoadingOverlay from './LoadingOverlay';
 import {
@@ -10,6 +11,7 @@ import {
   getIsBufferingFromStatus,
   getVideoPointerEvents,
   resolveMuted,
+  shouldPauseOnAppForeground,
   togglePlayPause,
 } from './videoPlayer.logic';
 
@@ -23,7 +25,10 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   const [hasError, setHasError] = React.useState(false);
   const [isBuffering, setIsBuffering] = React.useState(true);
   const [isPlaying, setIsPlaying] = React.useState(false);
+  const [isUserPaused, setIsUserPaused] = React.useState(false);
   const [retryToken, setRetryToken] = React.useState(0);
+  const shouldResumeAfterBufferRef = React.useRef(false);
+  const appStateRef = React.useRef(AppState.currentState);
   const guardedRetry = React.useMemo(() => createRetryGuard(), []);
   const resolvedMuted = resolveMuted(muted);
 
@@ -51,22 +56,62 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
 
   React.useEffect(() => {
     player.muted = resolvedMuted;
-    if (isActive) {
+    if (isActive && !isUserPaused) {
       player.play();
     } else {
       player.pause();
     }
-  }, [isActive, player, resolvedMuted]);
+  }, [isActive, isUserPaused, player, resolvedMuted]);
 
   React.useEffect(() => {
     setHasError(false);
     setIsBuffering(true);
+    setIsUserPaused(false);
+    shouldResumeAfterBufferRef.current = false;
   }, [uri, retryToken]);
+
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const previousState = appStateRef.current;
+      appStateRef.current = nextState;
+
+      if (!shouldPauseOnAppForeground(previousState, nextState)) {
+        return;
+      }
+
+      shouldResumeAfterBufferRef.current = false;
+      setIsUserPaused(true);
+      player.pause();
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [player]);
 
   React.useEffect(() => {
     setHasError(statusChange.status === 'error');
     setIsBuffering(getIsBufferingFromStatus(statusChange.status));
-  }, [statusChange.status]);
+
+    if (statusChange.status === 'loading' && isActive && !isUserPaused) {
+      shouldResumeAfterBufferRef.current = true;
+    }
+
+    // Resume only once after a loading phase, to avoid play/pause thrashing.
+    if (
+      statusChange.status === 'readyToPlay' &&
+      isActive &&
+      !isUserPaused &&
+      shouldResumeAfterBufferRef.current
+    ) {
+      player.play();
+      shouldResumeAfterBufferRef.current = false;
+    }
+
+    if (statusChange.status === 'error') {
+      shouldResumeAfterBufferRef.current = false;
+    }
+  }, [isActive, isUserPaused, player, statusChange.status]);
 
   const displayState = getDisplayState({ hasError, isBuffering });
 
@@ -77,12 +122,17 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   }, [guardedRetry]);
 
   const handleVideoTap = React.useCallback(() => {
+    if (isPlaying) {
+      shouldResumeAfterBufferRef.current = false;
+    }
+    setIsUserPaused(isPlaying);
     togglePlayPause(isPlaying, player);
   }, [isPlaying, player]);
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.videoContainer} onPress={handleVideoTap} pointerEvents="auto">
+      <TapGestureHandler onActivated={handleVideoTap}>
+        <View style={styles.videoContainer} pointerEvents="auto">
         <VideoView
           key={`${uri}:${retryToken}`}
           style={styles.video}
@@ -92,7 +142,8 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
           nativeControls={false}
           fullscreenOptions={{ enable: false }}
         />
-      </Pressable>
+        </View>
+      </TapGestureHandler>
 
       {displayState === 'buffering' ? <LoadingOverlay /> : null}
 

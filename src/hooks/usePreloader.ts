@@ -27,15 +27,21 @@ export const planPreloadOps = ({
     };
   }
 
+  const previousIndex = normalize(current - 1, length);
   const keep = [
-    normalize(current - 1, length),
     normalize(current, length),
-    normalize(current + 1, length),
+    // normalize(current + 1, length),
   ];
 
-  if (includeSecondNext) {
-    keep.push(normalize(current + 2, length));
+  // Retain previous only when it was already kept in last frame.
+  // This preserves back-swipe instant resume without preloading far videos at cold start.
+  if (previousRetained.includes(previousIndex)) {
+    keep.push(previousIndex);
   }
+
+  // if (includeSecondNext) {
+  //   keep.push(normalize(current + 2, length));
+  // }
 
   const dedupedKeep = uniqueInOrder(keep);
 

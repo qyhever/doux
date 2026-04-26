@@ -10,6 +10,10 @@
       "expo-router"
     ],
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#8A46DD"
+      },
       "package": "com.qyhever.doux"
     },
     "extra": {
@@ -19,6 +23,7 @@
       }
     },
     "ios": {
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.qyhever.doux"
     }
   }
