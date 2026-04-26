@@ -1,17 +1,41 @@
-import { useState, useCallback } from 'react';
-import { VIDEO_URLS } from '../config/videos';
+export type SwitchDecision = 'prev' | 'next' | 'stay';
 
-export function useVideoFeed() {
-  const total = VIDEO_URLS.length;
-  const [currentIndex, setCurrentIndex] = useState(0);
+export const normalizeIndex = (index: number, length: number): number => {
+  if (length <= 0) return 0;
+  return ((index % length) + length) % length;
+};
 
-  const goNext = useCallback(() => {
-    setCurrentIndex(i => (i + 1) % total);
-  }, [total]);
+export const decideSwitch = ({
+  dy,
+  vy,
+  height,
+}: {
+  dy: number;
+  vy: number;
+  height: number;
+}): SwitchDecision => {
+  const distanceThreshold = height * 0.3;
+  const velocityThreshold = 500;
 
-  const goPrev = useCallback(() => {
-    setCurrentIndex(i => (i - 1 + total) % total);
-  }, [total]);
+  if (dy <= -distanceThreshold || vy <= -velocityThreshold) return 'next';
+  if (dy >= distanceThreshold || vy >= velocityThreshold) return 'prev';
+  return 'stay';
+};
 
-  return { currentIndex, goNext, goPrev, total };
-}
+export const createTransitionGate = () => {
+  let locked = false;
+
+  return {
+    tryLock() {
+      if (locked) return false;
+      locked = true;
+      return true;
+    },
+    release() {
+      locked = false;
+    },
+    isLocked() {
+      return locked;
+    },
+  };
+};
