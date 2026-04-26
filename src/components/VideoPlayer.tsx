@@ -1,81 +1,33 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import LoadingOverlay from './LoadingOverlay';
-import ErrorPlaceholder from './ErrorPlaceholder';
+import React from 'react';
 
-type Props = {
-  uri: string;
-  isActive: boolean;
-  onError: () => void;
-  onLoad: () => void;
+export type DisplayState = 'error' | 'buffering' | 'playing';
+
+export const getDisplayState = ({
+  hasError,
+  isBuffering,
+}: {
+  hasError: boolean;
+  isBuffering: boolean;
+}): DisplayState => {
+  if (hasError) return 'error';
+  if (isBuffering) return 'buffering';
+  return 'playing';
 };
 
-export default function VideoPlayer({ uri, isActive, onError, onLoad }: Props) {
-  const [isBuffering, setIsBuffering] = useState(true);
-  const [hasError, setHasError] = useState(false);
+export const createRetryGuard = () => {
+  let pending = false;
 
-  const player = useVideoPlayer({ uri }, (p) => {
-    p.loop = true;
-    p.muted = true;
-  });
-
-  useEffect(() => {
-    if (isActive) {
-      player.play();
-    } else {
-      player.pause();
+  return async (retryFn: () => Promise<void>) => {
+    if (pending) return;
+    pending = true;
+    try {
+      await retryFn();
+    } finally {
+      pending = false;
     }
-  }, [isActive, player]);
+  };
+};
 
-  useEffect(() => {
-    const statusSub = player.addListener('statusChange', (event: any) => {
-      const { status, error } = event;
-      if (error) {
-        setHasError(true);
-        setIsBuffering(false);
-        onError();
-      } else if (status === 'readyToPlay') {
-        setIsBuffering(false);
-        setHasError(false);
-        onLoad();
-      } else if (status === 'loading') {
-        setIsBuffering(true);
-      }
-    });
+const VideoPlayer = () => null;
 
-    return () => {
-      statusSub.remove();
-    };
-  }, [player]); // Only re-subscribe when player instance changes
-
-  const handleRetry = useCallback(() => {
-    setHasError(false);
-    setIsBuffering(true);
-    player.replace({ uri });
-    if (isActive) player.play();
-  }, [player, uri, isActive]);
-
-  return (
-    <View style={styles.container}>
-      <VideoView
-        player={player}
-        style={styles.video}
-        contentFit="cover"
-        nativeControls={false}
-      />
-      {isBuffering && !hasError && <LoadingOverlay />}
-      {hasError && <ErrorPlaceholder onRetry={handleRetry} />}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  video: {
-    flex: 1,
-  },
-});
+export default VideoPlayer;
