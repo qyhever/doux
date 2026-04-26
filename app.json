@@ -4,6 +4,7 @@
     "slug": "doux",
     "scheme": "doux",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "plugins": [
       "expo-router"
@@ -16,6 +17,9 @@
       "eas": {
         "projectId": "5030c721-a080-4d49-81c6-aec732e1a2b1"
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.qyhever.doux"
     }
   }
 }

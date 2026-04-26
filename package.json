@@ -10,7 +10,10 @@
     "web": "expo start --web",
     "test": "jest",
     "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "run:android": "expo run:android",
+    "run:ios": "expo run:ios",
+    "build:android": "cd android && ./gradlew assembleRelease"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
