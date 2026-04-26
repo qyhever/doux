@@ -7,6 +7,15 @@
     "userInterfaceStyle": "dark",
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "android": {
+      "package": "com.qyhever.doux"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5030c721-a080-4d49-81c6-aec732e1a2b1"
+      }
+    }
   }
 }
