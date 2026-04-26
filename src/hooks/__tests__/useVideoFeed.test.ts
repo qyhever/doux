@@ -12,6 +12,11 @@ describe('useVideoFeed core rules', () => {
     expect(decideSwitch({ dy: -100, vy: -100, height: 1000 })).toBe('stay');
   });
 
+  it('enables light swipe to trigger page switch at lower thresholds', () => {
+    expect(decideSwitch({ dy: -150, vy: -100, height: 1000 })).toBe('next');
+    expect(decideSwitch({ dy: -50, vy: -300, height: 1000 })).toBe('next');
+  });
+
   it('blocks concurrent transition commit when lock is active', () => {
     const gate = createTransitionGate();
     expect(gate.tryLock()).toBe(true);

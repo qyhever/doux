@@ -1,9 +1,17 @@
 import React from 'react';
+import { useEvent } from 'expo';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { VideoSource, VideoView, useVideoPlayer } from 'expo-video';
 import ErrorPlaceholder from './ErrorPlaceholder';
 import LoadingOverlay from './LoadingOverlay';
-import { createRetryGuard, getDisplayState } from './videoPlayer.logic';
+import {
+  createRetryGuard,
+  getDisplayState,
+  getIsBufferingFromStatus,
+  getVideoPointerEvents,
+  resolveMuted,
+  togglePlayPause,
+} from './videoPlayer.logic';
 
 export type VideoPlayerProps = {
   uri: string;
@@ -11,11 +19,13 @@ export type VideoPlayerProps = {
   isActive?: boolean;
 };
 
-const VideoPlayer = ({ uri, muted = true, isActive = true }: VideoPlayerProps) => {
+const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   const [hasError, setHasError] = React.useState(false);
   const [isBuffering, setIsBuffering] = React.useState(true);
+  const [isPlaying, setIsPlaying] = React.useState(false);
   const [retryToken, setRetryToken] = React.useState(0);
   const guardedRetry = React.useMemo(() => createRetryGuard(), []);
+  const resolvedMuted = resolveMuted(muted);
 
   const source = React.useMemo<VideoSource>(
     () => ({ uri, metadata: { title: `video-${retryToken}` } }),
@@ -24,7 +34,7 @@ const VideoPlayer = ({ uri, muted = true, isActive = true }: VideoPlayerProps) =
 
   const player = useVideoPlayer(source, (currentPlayer) => {
     currentPlayer.loop = true;
-    currentPlayer.muted = muted;
+    currentPlayer.muted = resolvedMuted;
     if (isActive) {
       currentPlayer.play();
     } else {
@@ -32,23 +42,31 @@ const VideoPlayer = ({ uri, muted = true, isActive = true }: VideoPlayerProps) =
     }
   });
 
+  const statusChange = useEvent(player, 'statusChange', { status: player.status });
+  const playingChange = useEvent(player, 'playingChange', { isPlaying: false });
+
   React.useEffect(() => {
-    player.muted = muted;
+    setIsPlaying(playingChange.isPlaying);
+  }, [playingChange.isPlaying]);
+
+  React.useEffect(() => {
+    player.muted = resolvedMuted;
     if (isActive) {
       player.play();
     } else {
       player.pause();
     }
-  }, [isActive, muted, player]);
+  }, [isActive, player, resolvedMuted]);
 
   React.useEffect(() => {
     setHasError(false);
     setIsBuffering(true);
-    const timer = setTimeout(() => {
-      setIsBuffering(false);
-    }, 250);
-    return () => clearTimeout(timer);
   }, [uri, retryToken]);
+
+  React.useEffect(() => {
+    setHasError(statusChange.status === 'error');
+    setIsBuffering(getIsBufferingFromStatus(statusChange.status));
+  }, [statusChange.status]);
 
   const displayState = getDisplayState({ hasError, isBuffering });
 
@@ -58,16 +76,23 @@ const VideoPlayer = ({ uri, muted = true, isActive = true }: VideoPlayerProps) =
     });
   }, [guardedRetry]);
 
+  const handleVideoTap = React.useCallback(() => {
+    togglePlayPause(isPlaying, player);
+  }, [isPlaying, player]);
+
   return (
     <View style={styles.container}>
-      <VideoView
-        key={`${uri}:${retryToken}`}
-        style={styles.video}
-        player={player}
-        contentFit="cover"
-        nativeControls={false}
-        allowsFullscreen={false}
-      />
+      <Pressable style={styles.videoContainer} onPress={handleVideoTap} pointerEvents="auto">
+        <VideoView
+          key={`${uri}:${retryToken}`}
+          style={styles.video}
+          player={player}
+          pointerEvents={getVideoPointerEvents()}
+          contentFit="cover"
+          nativeControls={false}
+          fullscreenOptions={{ enable: false }}
+        />
+      </Pressable>
 
       {displayState === 'buffering' ? <LoadingOverlay /> : null}
 
@@ -76,22 +101,21 @@ const VideoPlayer = ({ uri, muted = true, isActive = true }: VideoPlayerProps) =
       ) : null}
 
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>{muted ? '静音播放' : '有声播放'}</Text>
+        <Text style={styles.badgeText}>{resolvedMuted ? '静音播放' : '有声播放'}</Text>
       </View>
-
-      <Pressable style={styles.tapZone} onPress={() => setIsBuffering(false)}>
-        <Text style={styles.tapHint}>轻触隐藏缓冲层</Text>
-      </Pressable>
     </View>
   );
 };
 
-export { createRetryGuard, getDisplayState };
+export { createRetryGuard, getDisplayState, resolveMuted, togglePlayPause };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  videoContainer: {
+    flex: 1,
   },
   video: {
     flex: 1,
@@ -108,17 +132,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#fff',
     fontSize: 12,
-  },
-  tapZone: {
-    position: 'absolute',
-    left: 10,
-    top: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  tapHint: {
-    color: '#c8c8c8',
-    fontSize: 11,
   },
 });
 

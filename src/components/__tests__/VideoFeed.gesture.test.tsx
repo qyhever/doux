@@ -1,4 +1,4 @@
-import { performTransition } from '../videoFeed.logic';
+import { getCardStepOffset, performTransition } from '../videoFeed.logic';
 
 describe('VideoFeed transition order', () => {
   it('commits index only after animation completes', async () => {
@@ -14,5 +14,12 @@ describe('VideoFeed transition order', () => {
     });
 
     expect(trace).toEqual(['animate-done', 'commit-done']);
+  });
+
+  it('maps adjacent videos and second-next video to card slots', () => {
+    expect(getCardStepOffset({ currentIndex: 0, candidateIndex: 4, length: 5 })).toBe(-1);
+    expect(getCardStepOffset({ currentIndex: 0, candidateIndex: 0, length: 5 })).toBe(0);
+    expect(getCardStepOffset({ currentIndex: 0, candidateIndex: 1, length: 5 })).toBe(1);
+    expect(getCardStepOffset({ currentIndex: 0, candidateIndex: 2, length: 5 })).toBe(2);
   });
 });

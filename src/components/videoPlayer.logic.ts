@@ -1,4 +1,27 @@
+import { VideoPlayerStatus } from 'expo-video';
+import { ViewProps } from 'react-native';
+
 export type DisplayState = 'error' | 'buffering' | 'playing';
+
+export const resolveMuted = (muted?: boolean): boolean => muted ?? false;
+
+export const getVideoPointerEvents = (): ViewProps['pointerEvents'] => 'none';
+
+export const togglePlayPause = (isPlaying: boolean, player: any): void => {
+  if (isPlaying) {
+    player.pause();
+  } else {
+    player.play();
+  }
+};
+
+export const getIsBufferingFromStatus = (status?: VideoPlayerStatus): boolean => {
+  if (status === 'readyToPlay' || status === 'error') {
+    return false;
+  }
+
+  return true;
+};
 
 export const getDisplayState = ({
   hasError,

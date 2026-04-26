@@ -14,8 +14,8 @@ export const decideSwitch = ({
   vy: number;
   height: number;
 }): SwitchDecision => {
-  const distanceThreshold = height * 0.3;
-  const velocityThreshold = 500;
+  const distanceThreshold = height * 0.15;
+  const velocityThreshold = 300;
 
   if (dy <= -distanceThreshold || vy <= -velocityThreshold) return 'next';
   if (dy >= distanceThreshold || vy >= velocityThreshold) return 'prev';

@@ -15,25 +15,52 @@ import ActionButtons from './ActionButtons';
 import TabBar from './TabBar';
 import VideoInfo from './VideoInfo';
 import VideoPlayer from './VideoPlayer';
-import { performTransition } from './videoFeed.logic';
+import { getCardStepOffset, performTransition } from './videoFeed.logic';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SECOND_NEXT_PRELOAD_DELAY_MS = 220;
 
 const VideoFeed = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [retained, setRetained] = React.useState<number[]>([0, 1]);
+  const [retained, setRetained] = React.useState<number[]>(() =>
+    planPreloadOps({
+      current: 0,
+      length: videos.length,
+      previousRetained: [],
+      includeSecondNext: false,
+    }).acquire,
+  );
   const translateY = React.useRef(new Animated.Value(0)).current;
   const gateRef = React.useRef(createTransitionGate());
 
   React.useEffect(() => {
+    // Stage 1: prioritize the immediate next video.
     setRetained((previousRetained) => {
       const ops = planPreloadOps({
         current: currentIndex,
         length: videos.length,
         previousRetained,
+        includeSecondNext: false,
       });
       return ops.acquire;
     });
+
+    // Stage 2: expand to second-next after a short delay.
+    const timer = setTimeout(() => {
+      setRetained((previousRetained) => {
+        const ops = planPreloadOps({
+          current: currentIndex,
+          length: videos.length,
+          previousRetained,
+          includeSecondNext: true,
+        });
+        return ops.acquire;
+      });
+    }, SECOND_NEXT_PRELOAD_DELAY_MS);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [currentIndex]);
 
   const commitByDecision = React.useCallback((decision: 'prev' | 'next' | 'stay') => {
@@ -103,8 +130,28 @@ const VideoFeed = () => {
   return (
     <SafeAreaView style={styles.screen}>
       <Animated.View style={[styles.feedCard, { transform: [{ translateY }] }]} {...panResponder.panHandlers}>
-        <VideoPlayer uri={videos[currentIndex]} isActive muted />
-        <View style={styles.overlayContainer}>
+        {retained.map((index) => {
+          const stepOffset = getCardStepOffset({
+            currentIndex,
+            candidateIndex: index,
+            length: videos.length,
+          });
+
+          if (stepOffset === null) {
+            return null;
+          }
+
+          return (
+            <View
+              key={`${videos[index]}-${index}`}
+              style={[styles.videoCard, { transform: [{ translateY: stepOffset * SCREEN_HEIGHT }] }]}
+              pointerEvents="none"
+            >
+              <VideoPlayer uri={videos[index]} isActive={index === currentIndex} />
+            </View>
+          );
+        })}
+        <View style={styles.overlayContainer} pointerEvents="box-none">
           <VideoInfo
             username="@doux_user"
             description="稳定性优先的短视频体验"
@@ -127,6 +174,9 @@ const styles = StyleSheet.create({
   },
   feedCard: {
     flex: 1,
+  },
+  videoCard: {
+    ...StyleSheet.absoluteFillObject,
   },
   overlayContainer: {
     position: 'absolute',
