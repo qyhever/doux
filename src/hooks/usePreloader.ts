@@ -1,13 +1,27 @@
-import { useMemo } from 'react';
-import { VIDEO_URLS } from '../config/videos';
+const normalize = (index: number, length: number): number => ((index % length) + length) % length;
 
-export function usePreloader(currentIndex: number) {
-  const total = VIDEO_URLS.length;
+export const planPreloadOps = ({
+  current,
+  length,
+  previousRetained,
+}: {
+  current: number;
+  length: number;
+  previousRetained: number[];
+}) => {
+  if (length <= 0) {
+    return {
+      acquire: [] as number[],
+      release: previousRetained,
+    };
+  }
 
-  const activeIndices = useMemo(() => {
-    if (total <= 1) return [currentIndex];
-    return [currentIndex, (currentIndex + 1) % total];
-  }, [currentIndex, total]);
+  const keep = [normalize(current, length), normalize(current + 1, length)];
+  const releaseTarget = normalize(current - 2, length);
+  const release = previousRetained.includes(releaseTarget) ? [releaseTarget] : [];
 
-  return { activeIndices };
-}
+  return {
+    acquire: keep,
+    release,
+  };
+};
