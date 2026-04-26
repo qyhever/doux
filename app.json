@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "doux",
+    "slug": "doux",
+    "scheme": "doux",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

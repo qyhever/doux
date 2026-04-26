@@ -67,10 +67,6 @@ const VideoPlayer = ({ uri, muted = true, isActive = true }: VideoPlayerProps) =
         contentFit="cover"
         nativeControls={false}
         allowsFullscreen={false}
-        onError={() => {
-          setHasError(true);
-          setIsBuffering(false);
-        }}
       />
 
       {displayState === 'buffering' ? <LoadingOverlay /> : null}
