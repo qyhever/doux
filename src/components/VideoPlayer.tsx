@@ -3,10 +3,13 @@ import { useEvent } from 'expo';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import { VideoSource, VideoView, useVideoPlayer } from 'expo-video';
 import { TapGestureHandler } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import ErrorPlaceholder from './ErrorPlaceholder';
 import LoadingOverlay from './LoadingOverlay';
 import {
   createRetryGuard,
+  formatTime,
+  getPlaybackProgress,
   getDisplayState,
   getIsBufferingFromStatus,
   getVideoPointerEvents,
@@ -40,6 +43,12 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   const player = useVideoPlayer(source, (currentPlayer) => {
     currentPlayer.loop = true;
     currentPlayer.muted = resolvedMuted;
+    currentPlayer.timeUpdateEventInterval = 0.25;
+    // 预缓冲整个视频，避免 loop 重播时重新拉流卡顿
+    currentPlayer.bufferOptions = {
+      preferredForwardBufferDuration: 60,
+      waitsToMinimizeStalling: true,
+    };
     if (isActive) {
       currentPlayer.play();
     } else {
@@ -49,6 +58,12 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
 
   const statusChange = useEvent(player, 'statusChange', { status: player.status });
   const playingChange = useEvent(player, 'playingChange', { isPlaying: false });
+  const timeUpdate = useEvent(player, 'timeUpdate', {
+    currentTime: 0,
+    currentLiveTimestamp: null,
+    currentOffsetFromLive: null,
+    bufferedPosition: 0,
+  });
 
   React.useEffect(() => {
     setIsPlaying(playingChange.isPlaying);
@@ -114,6 +129,7 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   }, [isActive, isUserPaused, player, statusChange.status]);
 
   const displayState = getDisplayState({ hasError, isBuffering });
+  const playbackProgress = getPlaybackProgress(timeUpdate.currentTime, player.duration);
 
   const onRetry = React.useCallback(async () => {
     await guardedRetry(async () => {
@@ -133,17 +149,40 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
     <View style={styles.container}>
       <TapGestureHandler onActivated={handleVideoTap}>
         <View style={styles.videoContainer} pointerEvents="auto">
-        <VideoView
-          key={`${uri}:${retryToken}`}
-          style={styles.video}
-          player={player}
-          pointerEvents={getVideoPointerEvents()}
-          contentFit="cover"
-          nativeControls={false}
-          fullscreenOptions={{ enable: false }}
-        />
+          <VideoView
+            key={`${uri}:${retryToken}`}
+            style={styles.video}
+            player={player}
+            pointerEvents={getVideoPointerEvents()}
+            contentFit="contain"
+            nativeControls={false}
+            fullscreenOptions={{ enable: false }}
+          />
         </View>
       </TapGestureHandler>
+
+      {isUserPaused && displayState !== 'error' ? (
+        <>
+          <View style={styles.pauseOverlay} pointerEvents="none">
+            <Ionicons name="play" size={80} color="rgba(255,255,255,0.85)" />
+          </View>
+          <View style={styles.progressRow} pointerEvents="none">
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${Math.round(playbackProgress * 100)}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.progressTime}>
+              {formatTime(timeUpdate.currentTime)}/{formatTime(player.duration)}
+            </Text>
+          </View>
+        </>
+      ) : null}
 
       {displayState === 'buffering' ? <LoadingOverlay /> : null}
 
@@ -183,6 +222,41 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#fff',
     fontSize: 12,
+  },
+  pauseOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressRow: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+  },
+  progressTime: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 0,
   },
 });
 

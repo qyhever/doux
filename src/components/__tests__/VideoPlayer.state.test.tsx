@@ -1,5 +1,7 @@
 import {
   createRetryGuard,
+  formatTime,
+  getPlaybackProgress,
   getDisplayState,
   getIsBufferingFromStatus,
   getVideoPointerEvents,
@@ -30,6 +32,23 @@ describe('VideoPlayer display state', () => {
 
   it('keeps the video surface from intercepting feed swipe gestures', () => {
     expect(getVideoPointerEvents()).toBe('none');
+  });
+
+  it('calculates playback progress within 0..1 range', () => {
+    expect(getPlaybackProgress(5, 10)).toBe(0.5);
+    expect(getPlaybackProgress(-1, 10)).toBe(0);
+    expect(getPlaybackProgress(20, 10)).toBe(1);
+    expect(getPlaybackProgress(2, 0)).toBe(0);
+    expect(getPlaybackProgress(Number.NaN, 10)).toBe(0);
+  });
+
+  it('formats seconds into m:ss string', () => {
+    expect(formatTime(0)).toBe('0:00');
+    expect(formatTime(59)).toBe('0:59');
+    expect(formatTime(60)).toBe('1:00');
+    expect(formatTime(125)).toBe('2:05');
+    expect(formatTime(-1)).toBe('0:00');
+    expect(formatTime(Number.NaN)).toBe('0:00');
   });
 
   it('debounces concurrent retries', async () => {

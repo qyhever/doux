@@ -15,6 +15,23 @@ export const togglePlayPause = (isPlaying: boolean, player: any): void => {
   }
 };
 
+export const formatTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const totalSecs = Math.floor(seconds);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const getPlaybackProgress = (currentTime: number, duration: number): number => {
+  if (!Number.isFinite(currentTime) || !Number.isFinite(duration) || duration <= 0) {
+    return 0;
+  }
+
+  const progress = currentTime / duration;
+  return Math.max(0, Math.min(progress, 1));
+};
+
 export const getIsBufferingFromStatus = (status?: VideoPlayerStatus): boolean => {
   if (status === 'readyToPlay' || status === 'error') {
     return false;

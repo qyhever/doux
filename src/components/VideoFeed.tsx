@@ -146,7 +146,7 @@ const VideoFeed = () => {
         <View style={styles.overlayContainer} pointerEvents="box-none">
           <VideoInfo
             username="@doux_user"
-            description="稳定性优先的短视频体验"
+            description={videos[currentIndex].split('/').pop() ?? videos[currentIndex]}
             music="原声 · doux"
           />
           <ActionButtons />
