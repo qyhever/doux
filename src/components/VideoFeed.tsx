@@ -135,18 +135,18 @@ const VideoFeed = () => {
 
           return (
             <View
-              key={`${videos[index]}-${index}`}
+              key={`${videos[index].fileName}-${index}`}
               style={[styles.videoCard, { transform: [{ translateY: stepOffset * SCREEN_HEIGHT }] }]}
               pointerEvents={getCardPointerEvents({ currentIndex, candidateIndex: index })}
             >
-              <VideoPlayer uri={videos[index]} isActive={index === currentIndex} />
+              <VideoPlayer uri={videos[index].uri} isActive={index === currentIndex} />
             </View>
           );
         })}
         <View style={styles.overlayContainer} pointerEvents="box-none">
           <VideoInfo
             username="@doux_user"
-            description={videos[currentIndex].split('/').pop() ?? videos[currentIndex]}
+            description={videos[currentIndex].videoName}
             music="原声 · doux"
           />
           <ActionButtons />

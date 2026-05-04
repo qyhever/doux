@@ -2,7 +2,13 @@ import React from 'react';
 import { useEvent } from 'expo';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import { VideoSource, VideoView, useVideoPlayer } from 'expo-video';
-import { TapGestureHandler } from 'react-native-gesture-handler';
+import {
+  PanGestureHandler,
+  PanGestureHandlerGestureEvent,
+  PanGestureHandlerStateChangeEvent,
+  State,
+  TapGestureHandler,
+} from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import ErrorPlaceholder from './ErrorPlaceholder';
 import LoadingOverlay from './LoadingOverlay';
@@ -131,6 +137,48 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   const displayState = getDisplayState({ hasError, isBuffering });
   const playbackProgress = getPlaybackProgress(timeUpdate.currentTime, player.duration);
 
+  // ── 拖拽 seek ──────────────────────────────────────────────────────────────
+  const trackWidthRef = React.useRef(0);
+  const seekXRef = React.useRef(0);
+  const [seekProgress, setSeekProgress] = React.useState<number | null>(null);
+
+  const clampProgress = (x: number) =>
+    Math.max(0, Math.min(x / Math.max(trackWidthRef.current, 1), 1));
+
+  const handleSeekGesture = React.useCallback(
+    (event: PanGestureHandlerGestureEvent) => {
+      const x = event.nativeEvent.x;
+      seekXRef.current = x;
+      setSeekProgress(clampProgress(x));
+    },
+    // clampProgress reads only refs — stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const handleSeekStateChange = React.useCallback(
+    (event: PanGestureHandlerStateChangeEvent) => {
+      const { state, x } = event.nativeEvent;
+      if (state === State.BEGAN) {
+        seekXRef.current = x;
+        setSeekProgress(clampProgress(x));
+      } else if (state === State.END) {
+        const progress = clampProgress(seekXRef.current);
+        player.currentTime = progress * player.duration;
+        setSeekProgress(null);
+      } else if (state === State.CANCELLED || state === State.FAILED) {
+        setSeekProgress(null);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [player],
+  );
+
+  const displayedProgress = seekProgress ?? playbackProgress;
+  const displayedTime =
+    seekProgress !== null ? seekProgress * player.duration : timeUpdate.currentTime;
+  // ───────────────────────────────────────────────────────────────────────────
+
   const onRetry = React.useCallback(async () => {
     await guardedRetry(async () => {
       setRetryToken((value) => value + 1);
@@ -166,21 +214,30 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
           <View style={styles.pauseOverlay} pointerEvents="none">
             <Ionicons name="play" size={80} color="rgba(255,255,255,0.85)" />
           </View>
-          <View style={styles.progressRow} pointerEvents="none">
-            <View style={styles.progressTrack}>
+          <PanGestureHandler
+            onGestureEvent={handleSeekGesture}
+            onHandlerStateChange={handleSeekStateChange}
+            minDist={0}
+          >
+            <View style={styles.progressRow} hitSlop={{ top: 16, bottom: 16 }}>
               <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${Math.round(playbackProgress * 100)}%`,
-                  },
-                ]}
-              />
+                style={styles.progressTrack}
+                onLayout={(e) => {
+                  trackWidthRef.current = e.nativeEvent.layout.width;
+                }}
+              >
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.round(displayedProgress * 100)}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressTime}>
+                {formatTime(displayedTime)}/{formatTime(player.duration)}
+              </Text>
             </View>
-            <Text style={styles.progressTime}>
-              {formatTime(timeUpdate.currentTime)}/{formatTime(player.duration)}
-            </Text>
-          </View>
+          </PanGestureHandler>
         </>
       ) : null}
 
@@ -220,6 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeText: {
+    display: 'none', // 先隐藏这个 badge，等需要调试时再打开
     color: '#fff',
     fontSize: 12,
   },
