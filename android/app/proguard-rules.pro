@@ -11,4 +11,10 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# expo-video / ExoPlayer(Media3)
+-keep class expo.modules.video.** { *; }
+-keep class androidx.media3.** { *; }
+-keep interface androidx.media3.** { *; }
+-dontwarn androidx.media3.**
+
 # Add any project specific keep options here:

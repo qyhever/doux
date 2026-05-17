@@ -40,6 +40,7 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
   const appStateRef = React.useRef(AppState.currentState);
   const guardedRetry = React.useMemo(() => createRetryGuard(), []);
   const resolvedMuted = resolveMuted(muted);
+  const lastErrorLogKeyRef = React.useRef<string | null>(null);
 
   const source = React.useMemo<VideoSource>(
     () => ({ uri, metadata: { title: `video-${retryToken}` } }),
@@ -131,8 +132,38 @@ const VideoPlayer = ({ uri, muted, isActive = true }: VideoPlayerProps) => {
 
     if (statusChange.status === 'error') {
       shouldResumeAfterBufferRef.current = false;
+
+      const payload = {
+        event: 'video_playback_error',
+        uri,
+        retryToken,
+        isActive,
+        isUserPaused,
+        muted: resolvedMuted,
+        appState: appStateRef.current,
+        statusSnapshot: statusChange,
+      };
+      const logKey = JSON.stringify({
+        uri,
+        retryToken,
+        status: statusChange.status,
+        appState: appStateRef.current,
+      });
+
+      if (lastErrorLogKeyRef.current !== logKey) {
+        lastErrorLogKeyRef.current = logKey;
+        console.error('[VideoPlayer] playback failed', payload);
+      }
     }
-  }, [isActive, isUserPaused, player, statusChange.status]);
+  }, [
+    isActive,
+    isUserPaused,
+    player,
+    resolvedMuted,
+    retryToken,
+    statusChange,
+    uri,
+  ]);
 
   const displayState = getDisplayState({ hasError, isBuffering });
   const playbackProgress = getPlaybackProgress(timeUpdate.currentTime, player.duration);

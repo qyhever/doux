@@ -14,13 +14,26 @@ export type VideoItem = VideoConfigItem & {
 };
 
 const VIDEO_API_BASE_URL =
-  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL
+  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ?? 'https://qyhever.com/eeao/api';
+const VIDEO_FILE_BASE_URL = new URL('/videos/', VIDEO_API_BASE_URL).toString();
 const VIDEO_API_URL = `${VIDEO_API_BASE_URL}/video`;
+
+const normalizeVideoUri = (fileName: string): string => {
+  if (/^https?:\/\//i.test(fileName)) {
+    return fileName;
+  }
+
+  if (fileName.startsWith('/')) {
+    return new URL(fileName, VIDEO_API_BASE_URL).toString();
+  }
+
+  return new URL(fileName, VIDEO_FILE_BASE_URL).toString();
+};
 
 const toVideoItem = (item: VideoConfigItem): VideoItem => {
   return {
     ...item,
-    uri: item.fileName,
+    uri: normalizeVideoUri(item.fileName),
   };
 };
 
