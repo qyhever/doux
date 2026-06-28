@@ -16,10 +16,15 @@ export type VideoItem = VideoConfigItem & {
   uri: string;
 };
 
+const DEFAULT_WEB_VIDEO_API_BASE_URL = '/api';
+const DEFAULT_NATIVE_VIDEO_API_BASE_URL = 'http://192.168.31.147:6304/api';
+
 const WEB_VIDEO_API_BASE_URL =
-  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ?? '/api';
+  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ?? DEFAULT_WEB_VIDEO_API_BASE_URL;
 const NATIVE_VIDEO_API_BASE_URL =
-  process.env.EXPO_PUBLIC_VIDEO_API_NATIVE_BASE_URL ?? 'http://192.168.31.147:6304/api';
+  process.env.EXPO_PUBLIC_VIDEO_API_NATIVE_BASE_URL ??
+  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ??
+  DEFAULT_NATIVE_VIDEO_API_BASE_URL;
 const VIDEO_API_BASE_URL =
   Platform.OS === 'web' ? WEB_VIDEO_API_BASE_URL : NATIVE_VIDEO_API_BASE_URL;
 const VIDEO_FILE_BASE_URL = /^https?:\/\//i.test(VIDEO_API_BASE_URL)
