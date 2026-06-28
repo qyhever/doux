@@ -11,7 +11,8 @@ import { planPreloadOps } from '../hooks/usePreloader';
 import ActionButtons from './ActionButtons';
 import ErrorPlaceholder from './ErrorPlaceholder';
 import LoadingOverlay from './LoadingOverlay';
-import TabBar from './TabBar';
+import ProfilePage from './ProfilePage';
+import TabBar, { TabKey } from './TabBar';
 import VideoInfo from './VideoInfo';
 import VideoPlayer from './VideoPlayer';
 import { getCardPointerEvents, getCardStepOffset, performTransition } from './videoFeed.logic';
@@ -24,6 +25,7 @@ const VideoFeed = () => {
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [retained, setRetained] = React.useState<number[]>([]);
+  const [activeTab, setActiveTab] = React.useState<TabKey>('home');
   const translateY = React.useRef(new Animated.Value(0)).current;
   const gateRef = React.useRef(createTransitionGate());
 
@@ -142,13 +144,30 @@ const VideoFeed = () => {
     [handleRelease, translateY],
   );
 
+  const handleTabPress = React.useCallback((tab: TabKey) => {
+    if (tab === 'home' || tab === 'profile') {
+      setActiveTab(tab);
+    }
+  }, []);
+
+  const tabBar = <TabBar activeTab={activeTab} onTabPress={handleTabPress} />;
+
+  if (activeTab === 'profile') {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ProfilePage works={videos} />
+        {tabBar}
+      </SafeAreaView>
+    );
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.feedbackWrap}>
           <LoadingOverlay />
         </View>
-        <TabBar />
+        {tabBar}
       </SafeAreaView>
     );
   }
@@ -160,7 +179,7 @@ const VideoFeed = () => {
           <ErrorPlaceholder onRetry={loadVideoList} />
           <Text style={styles.feedbackText}>{loadError}</Text>
         </View>
-        <TabBar />
+        {tabBar}
       </SafeAreaView>
     );
   }
@@ -171,7 +190,7 @@ const VideoFeed = () => {
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>暂无视频</Text>
         </View>
-        <TabBar />
+        {tabBar}
       </SafeAreaView>
     );
   }
@@ -216,7 +235,7 @@ const VideoFeed = () => {
         </View>
         </Animated.View>
       </PanGestureHandler>
-      <TabBar />
+      {tabBar}
     </SafeAreaView>
   );
 };

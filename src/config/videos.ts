@@ -1,6 +1,7 @@
 type VideoConfigItem = {
   fileName: string;
   videoName: string;
+  cover?: string;
 };
 
 type VideoApiResponse = {
@@ -15,25 +16,36 @@ export type VideoItem = VideoConfigItem & {
 
 const VIDEO_API_BASE_URL =
   process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ?? 'https://qyhever.com/eeao/api';
-const VIDEO_FILE_BASE_URL = new URL('/videos/', VIDEO_API_BASE_URL).toString();
+const VIDEO_FILE_BASE_URL = /^https?:\/\//i.test(VIDEO_API_BASE_URL)
+  ? new URL('/videos/', VIDEO_API_BASE_URL).toString()
+  : '/videos/';
 const VIDEO_API_URL = `${VIDEO_API_BASE_URL}/video`;
 
-const normalizeVideoUri = (fileName: string): string => {
-  if (/^https?:\/\//i.test(fileName)) {
-    return fileName;
+const normalizeAssetUri = (value: string, baseUrl: string): string => {
+  if (/^https?:\/\//i.test(value)) {
+    return value;
   }
 
-  if (fileName.startsWith('/')) {
-    return new URL(fileName, VIDEO_API_BASE_URL).toString();
+  if (!/^https?:\/\//i.test(baseUrl)) {
+    if (value.startsWith('/')) {
+      return value;
+    }
+
+    return `${baseUrl.replace(/\/$/, '')}/${value}`;
   }
 
-  return new URL(fileName, VIDEO_FILE_BASE_URL).toString();
+  if (value.startsWith('/')) {
+    return new URL(value, VIDEO_API_BASE_URL).toString();
+  }
+
+  return new URL(value, baseUrl).toString();
 };
 
 const toVideoItem = (item: VideoConfigItem): VideoItem => {
   return {
     ...item,
-    uri: normalizeVideoUri(item.fileName),
+    cover: item.cover ? normalizeAssetUri(item.cover, VIDEO_API_BASE_URL) : item.cover,
+    uri: normalizeAssetUri(item.fileName, VIDEO_FILE_BASE_URL),
   };
 };
 
