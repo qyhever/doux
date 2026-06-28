@@ -3,8 +3,8 @@ const http = require('node:http');
 const https = require('node:https');
 const { URL } = require('node:url');
 
-const proxyPort = Number(process.env.WEB_PROXY_PORT ?? 8082);
-const expoPort = Number(process.env.EXPO_DEV_SERVER_PORT ?? 8083);
+const proxyPort = Number(process.env.WEB_PROXY_PORT ?? 8083);
+const expoPort = Number(process.env.EXPO_DEV_SERVER_PORT ?? 8084);
 const apiTarget = process.env.VIDEO_API_PROXY_TARGET;
 const expoTarget = `http://localhost:${expoPort}`;
 const expoStartArgs = process.argv.slice(2);

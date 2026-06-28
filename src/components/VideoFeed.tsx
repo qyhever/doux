@@ -1,5 +1,6 @@
 import React from 'react';
 import { Animated, Dimensions, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import {
   PanGestureHandler,
   PanGestureHandlerStateChangeEvent,
@@ -20,6 +21,7 @@ import { getCardPointerEvents, getCardStepOffset, performTransition } from './vi
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const VideoFeed = () => {
+  const router = useRouter();
   const [videos, setVideos] = React.useState<VideoItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
@@ -150,12 +152,26 @@ const VideoFeed = () => {
     }
   }, []);
 
+  const handleWorkPress = React.useCallback(
+    (item: VideoItem) => {
+      router.push({
+        pathname: '/video-detail',
+        params: {
+          uri: item.uri,
+          videoName: item.videoName,
+          fileName: item.fileName,
+        },
+      });
+    },
+    [router],
+  );
+
   const tabBar = <TabBar activeTab={activeTab} onTabPress={handleTabPress} />;
 
   if (activeTab === 'profile') {
     return (
       <SafeAreaView style={styles.screen}>
-        <ProfilePage works={videos} />
+        <ProfilePage works={videos} onWorkPress={handleWorkPress} />
         {tabBar}
       </SafeAreaView>
     );

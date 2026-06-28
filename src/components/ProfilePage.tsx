@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { VideoItem } from '../config/videos';
 
 const stats = [
@@ -12,9 +12,10 @@ const quickActions = ['编辑资料', '作品管理', '我的收藏'];
 
 type ProfilePageProps = {
   works: VideoItem[];
+  onWorkPress?: (item: VideoItem, index: number) => void;
 };
 
-const ProfilePage = ({ works }: ProfilePageProps) => {
+const ProfilePage = ({ works, onWorkPress }: ProfilePageProps) => {
   return (
     <ScrollView
       style={styles.screen}
@@ -56,8 +57,12 @@ const ProfilePage = ({ works }: ProfilePageProps) => {
       </View>
 
       <View style={styles.grid}>
-        {works.map((item) => (
-          <View key={`${item.fileName}-${item.videoName}`} style={styles.workCard}>
+        {works.map((item, index) => (
+          <Pressable
+            key={`${item.fileName}-${item.videoName}`}
+            style={styles.workCard}
+            onPress={() => onWorkPress?.(item, index)}
+          >
             <View style={styles.workMedia}>
               {item.cover ? (
                 <Image source={{ uri: item.cover }} style={styles.workCover} resizeMode="cover" />
@@ -70,7 +75,7 @@ const ProfilePage = ({ works }: ProfilePageProps) => {
                 </Text>
               </View>
             </View>
-          </View>
+          </Pressable>
         ))}
       </View>
     </ScrollView>

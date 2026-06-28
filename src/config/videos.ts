@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 type VideoConfigItem = {
   fileName: string;
   videoName: string;
@@ -14,8 +16,12 @@ export type VideoItem = VideoConfigItem & {
   uri: string;
 };
 
+const WEB_VIDEO_API_BASE_URL =
+  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ?? '/api';
+const NATIVE_VIDEO_API_BASE_URL =
+  process.env.EXPO_PUBLIC_VIDEO_API_NATIVE_BASE_URL ?? 'http://192.168.31.147:6304/api';
 const VIDEO_API_BASE_URL =
-  process.env.EXPO_PUBLIC_VIDEO_API_BASE_URL ?? 'https://qyhever.com/eeao/api';
+  Platform.OS === 'web' ? WEB_VIDEO_API_BASE_URL : NATIVE_VIDEO_API_BASE_URL;
 const VIDEO_FILE_BASE_URL = /^https?:\/\//i.test(VIDEO_API_BASE_URL)
   ? new URL('/videos/', VIDEO_API_BASE_URL).toString()
   : '/videos/';
